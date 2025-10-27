@@ -264,12 +264,6 @@ For production deployment:
 3. Update `nginx.conf` with your domain
 4. Run `docker compose -f production.yml up -d --build`
 
-## Documentation
-
-- [Database Backup Guide](docs/DB_BACKUP.md) - Detailed backup and restore procedures
-- [Logging Documentation](docs/LOGGING.md) - Logging configuration and best practices
-- [Future Improvements](docs/FUTURE_IMPROVEMENTS.md) - Planned enhancements and features
-
 ## License
 
 MIT
