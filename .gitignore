@@ -1,0 +1,90 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# UV
+.uv/
+uv.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+
+# SSL Certificates
+ssl/
+compose/production/nginx/ssl/*.pem
+compose/production/nginx/ssl/*.key
+compose/production/nginx/ssl/*.crt
+*.pem
+*.key
+*.crt
+
+# Backups
+backup_*.sql
+*.backup
+
+# Legacy Docker files (use compose/ instead)
+docker-compose.prod.yml
+Dockerfile.prod
+nginx.conf
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic
+alembic/versions/*.py
+!alembic/versions/.gitkeep
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Markdown
+docs/
+
+# PowerShell
+*.ps1

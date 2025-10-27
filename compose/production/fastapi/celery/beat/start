@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Start Celery Beat Scheduler in Production Mode
+
+set -o errexit
+set -o nounset
+
+echo "⏰ Starting Celery Beat Scheduler (Production)..."
+echo "📊 Log level: WARNING"
+
+# Remove old schedule file
+rm -f /app/celerybeat-schedule
+
+exec celery -A app.tasks.celery_app beat \
+    --loglevel=warning

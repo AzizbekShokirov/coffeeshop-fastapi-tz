@@ -1,0 +1,63 @@
+[project]
+name = "coffeeshop-fastapi-tz"
+version = "0.1.0"
+description = "Coffee Shop API - User Management Module"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "sqlalchemy>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.1",
+    "pydantic[email]>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-jose[cryptography]>=3.3.0",
+    "bcrypt>=3.2.0,<4.0.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "celery>=5.3.6",
+    "redis>=5.0.1",
+    "pytest>=8.4.2",
+    "httpx>=0.28.1",
+    "pre-commit>=4.3.0",
+    "ruff>=0.14.1",
+    "black>=25.9.0",
+    "flower>=2.0.1",
+    "pytest-asyncio>=1.2.0",
+    "mypy>=1.8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv", "env"]
+skips = ["B101"]  # Skip assert_used check (common in tests)
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true

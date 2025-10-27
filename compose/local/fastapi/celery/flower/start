@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Start Celery Flower (Monitoring Tool) in Development Mode
+
+set -o errexit
+set -o nounset
+
+echo "🌸 Starting Celery Flower (Monitoring)..."
+echo "🔗 Flower will be available at http://0.0.0.0:5555"
+
+exec celery -A app.tasks.celery_app flower \
+    --port=5555 \
+    --basic_auth=admin:admin

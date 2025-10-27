@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Start Celery Worker in Production Mode
+
+set -o errexit
+set -o nounset
+
+echo "👷 Starting Celery Worker (Production)..."
+echo "📊 Log level: WARNING"
+
+exec celery -A app.tasks.celery_app worker \
+    --loglevel=warning \
+    --concurrency=4 \
+    --max-tasks-per-child=1000 \
+    --time-limit=300 \
+    --soft-time-limit=270

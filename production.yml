@@ -1,0 +1,137 @@
+name: coffeeshop_production
+services:
+  # PostgreSQL Database - Production
+  postgres:
+    build:
+      context: ./compose/production/postgres
+      dockerfile: Dockerfile
+    image: coffeeshop_db_prod
+    container_name: coffeeshop_db_prod
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - postgres_backup_prod:/backups
+      - ./compose/production/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    env_file:
+      - ./.envs/production/.env.database
+    environment:
+      - TZ=Asia/Tashkent
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coffeeshop_prod_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - coffeeshop_network
+
+  # Redis - Production
+  redis:
+    image: redis:7-alpine
+    container_name: coffeeshop_redis_prod
+    volumes:
+      - redis_data_prod:/data
+    env_file:
+      - ./.envs/production/.env.production
+    environment:
+      - TZ=Asia/Tashkent
+    command: sh -c 'redis-server --appendonly yes --requirepass $$REDIS_PASSWORD'
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - coffeeshop_network
+
+  # FastAPI Application - Production
+  api:
+    build:
+      context: .
+      dockerfile: ./compose/production/fastapi/Dockerfile
+    image: coffeeshop_api_prod
+    container_name: coffeeshop_api_prod
+    command: /start
+    env_file:
+      - ./.envs/production/.env.database
+      - ./.envs/production/.env.production
+    environment:
+      - TZ=Asia/Tashkent
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - coffeeshop_network
+
+  # Celery Worker - Production
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./compose/production/fastapi/Dockerfile
+    image: coffeeshop_celery_worker_prod
+    container_name: coffeeshop_celery_worker_prod
+    command: /start-celeryworker
+    env_file:
+      - ./.envs/production/.env.database
+      - ./.envs/production/.env.production
+    environment:
+      - TZ=Asia/Tashkent
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    networks:
+      - coffeeshop_network
+
+  # Celery Beat - Production
+  celery_beat:
+    build:
+      context: .
+      dockerfile: ./compose/production/fastapi/Dockerfile
+    image: coffeeshop_celery_beat_prod
+    container_name: coffeeshop_celery_beat_prod
+    command: /start-celerybeat
+    env_file:
+      - ./.envs/production/.env.database
+      - ./.envs/production/.env.production
+    environment:
+      - TZ=Asia/Tashkent
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    networks:
+      - coffeeshop_network
+
+  # Nginx Reverse Proxy - Production
+  nginx:
+    build:
+      context: ./compose/production/nginx
+      dockerfile: Dockerfile
+    image: coffeeshop_nginx_prod
+    container_name: coffeeshop_nginx_prod
+    volumes:
+      - ./compose/production/nginx/ssl:/etc/nginx/ssl:ro
+    environment:
+      - TZ=Asia/Tashkent
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - coffeeshop_network
+
+volumes:
+  postgres_data_prod:
+  postgres_backup_prod:
+  redis_data_prod:
+
+networks:
+  coffeeshop_network:
+    driver: bridge

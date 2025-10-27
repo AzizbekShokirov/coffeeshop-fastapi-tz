@@ -1,0 +1,143 @@
+name: coffeeshop_development
+services:
+  # PostgreSQL Database - Development
+  postgres:
+    build:
+      context: ./compose/local/postgres
+      dockerfile: Dockerfile
+    image: coffeeshop_db_dev
+    container_name: coffeeshop_db_dev
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - postgres_backup_dev:/backups
+      - ./compose/local/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    env_file:
+      - ./.envs/local/.env.database
+    environment:
+      - TZ=Asia/Tashkent
+    ports:
+      - "5432:5432"  # Expose PostgreSQL to localhost for local development
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coffeeshop_dev_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coffeeshop_network
+
+  # Redis (for Celery) - Development
+  redis:
+    image: redis:7-alpine
+    container_name: coffeeshop_redis_dev
+    env_file:
+      - ./.envs/local/.env.local
+    environment:
+      - TZ=Asia/Tashkent
+    ports:
+      - "6379:6379"  # Expose Redis to localhost for local development
+    command: sh -c 'redis-server --appendonly yes --requirepass $$REDIS_PASSWORD'
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coffeeshop_network
+
+  # FastAPI Application - Development
+  api:
+    build:
+      context: .
+      dockerfile: ./compose/local/fastapi/Dockerfile
+    image: coffeeshop_api_dev
+    container_name: coffeeshop_api_dev
+    command: /start
+    volumes:
+      - .:/app:z
+    env_file:
+      - ./.envs/local/.env.database
+      - ./.envs/local/.env.local
+    environment:
+      - TZ=Asia/Tashkent
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - coffeeshop_network
+
+  # Celery Worker - Development
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./compose/local/fastapi/Dockerfile
+    image: coffeeshop_celery_worker_dev
+    container_name: coffeeshop_celery_worker_dev
+    command: /start-celeryworker
+    volumes:
+      - .:/app:z
+    env_file:
+      - ./.envs/local/.env.database
+      - ./.envs/local/.env.local
+    environment:
+      - TZ=Asia/Tashkent
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - coffeeshop_network
+
+  # Celery Beat (scheduler) - Development
+  celery_beat:
+    build:
+      context: .
+      dockerfile: ./compose/local/fastapi/Dockerfile
+    image: coffeeshop_celery_beat_dev
+    container_name: coffeeshop_celery_beat_dev
+    command: /start-celerybeat
+    volumes:
+      - .:/app:z
+    env_file:
+      - ./.envs/local/.env.database
+      - ./.envs/local/.env.local
+    environment:
+      - TZ=Asia/Tashkent
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - coffeeshop_network
+
+  # Celery Flower (monitoring) - Development
+  flower:
+    build:
+      context: .
+      dockerfile: ./compose/local/fastapi/Dockerfile
+    image: coffeeshop_flower_dev
+    container_name: coffeeshop_flower_dev
+    command: /start-flower
+    volumes:
+      - .:/app:z
+    env_file:
+      - ./.envs/local/.env.database
+      - ./.envs/local/.env.local
+    environment:
+      - TZ=Asia/Tashkent
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - coffeeshop_network
+
+volumes:
+  postgres_data_dev:
+  postgres_backup_dev:
+
+networks:
+  coffeeshop_network:
+    driver: bridge

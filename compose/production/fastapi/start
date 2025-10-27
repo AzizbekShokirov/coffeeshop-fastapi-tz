@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Start FastAPI Application in Production Mode
+
+set -o errexit
+set -o nounset
+
+echo "🚀 Starting FastAPI Production Server..."
+echo "⚡ Running with multiple workers"
+
+# Run migrations before starting the server
+echo "📦 Running database migrations..."
+alembic upgrade head
+
+echo "✅ Migrations completed"
+echo "🔗 Starting API server..."
+
+exec uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --no-access-log \
+    --proxy-headers \
+    --forwarded-allow-ips='*'
