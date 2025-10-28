@@ -110,10 +110,11 @@ docker compose -f production.yml exec postgres psql -U postgres
 - `POST /auth/login` - Login and receive JWT tokens
 - `POST /auth/refresh` - Refresh access token
 - `POST /auth/verify` - Verify user email/phone
+- `POST /auth/resend-verification` - Resend verification code
 
 ### User Management (`/api/v1/users`, `/api/v1/me`)
 
-- `GET /me` - Get current authenticated user
+- `GET /users/me` - Get current authenticated user
 - `GET /users` - List all users (Admin only)
 - `GET /users/{id}` - Get user by ID (Admin only)
 - `PATCH /users/{id}` - Update user details
