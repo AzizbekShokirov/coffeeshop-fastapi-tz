@@ -59,7 +59,7 @@ async def get_current_user_profile(
     description="""
     Retrieve a paginated list of all users in the system.
 
-    **Admin access required**
+    Admin access required
 
     Features:
     - Pagination support (page, page_size)
@@ -114,7 +114,7 @@ async def get_users(
     description="""
     Retrieve detailed information about a specific user by their UUID.
 
-    **Admin access required**
+    Admin access required
 
     Use this endpoint to:
     - View user details for support requests
@@ -156,7 +156,7 @@ async def get_user_by_uuid(
     description="""
     Update user profile information.
 
-    **Permissions:**
+    Permissions:
     - Users can update their own profile
     - Admins can update any user's profile
 
@@ -233,7 +233,7 @@ async def update_user(
     description="""
     Permanently delete a user account from the system.
 
-    **Admin access required**
+    Admin access required
 
     Restrictions:
     - Admins cannot delete their own account
