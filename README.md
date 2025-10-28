@@ -43,28 +43,28 @@ A production-ready FastAPI application for managing coffee shop users with authe
 
 ```bash
 # Start all services (PostgreSQL, Redis, API, Celery Worker, Beat, Flower)
-docker compose -f development.yml up -d
+docker compose -f local.yml up -d
 
 # Build and start
-docker compose -f development.yml up -d --build
+docker compose -f local.yml up -d --build
 
 # View logs
-docker compose -f development.yml logs -f          # All services
-docker compose -f development.yml logs -f api      # API only
-docker compose -f development.yml logs -f worker   # Celery worker
+docker compose -f local.yml logs -f          # All services
+docker compose -f local.yml logs -f api      # API only
+docker compose -f local.yml logs -f celery_worker   # Celery worker
 
 # Stop services
-docker compose -f development.yml down            # Stop containers
-docker compose -f development.yml down -v         # Stop and remove volumes
+docker compose -f local.yml down            # Stop containers
+docker compose -f local.yml down -v         # Stop and remove volumes (⚠️ This deletes the database!)
 
 # Restart services
-docker compose -f development.yml restart api
-docker compose -f development.yml restart worker
+docker compose -f local.yml restart api
+docker compose -f local.yml restart celery_worker
 
 # Access container shells
-docker compose -f development.yml exec api bash           # API container
-docker compose -f development.yml exec postgres psql -U postgres  # Database
-docker compose -f development.yml exec redis redis-cli    # Redis
+docker compose -f local.yml exec api bash           # API container
+docker compose -f local.yml exec postgres psql -U postgres  # Database
+docker compose -f local.yml exec redis redis-cli    # Redis
 
 # Access the application
 # API: http://localhost:8000
@@ -210,7 +210,7 @@ coffeeshop-fastapi-tz/
 ├── .pre-commit-config.yaml     # Pre-commit hooks configuration
 ├── .python-version             # Python version specification
 ├── alembic.ini                 # Alembic configuration
-├── development.yml             # Development docker-compose
+├── local.yml                   # Development docker-compose
 ├── production.yml              # Production docker-compose
 ├── pyproject.toml              # Python dependencies (UV)
 ├── README.md                   # This file
