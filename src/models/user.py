@@ -19,30 +19,11 @@ from src.core.database import Base
 
 
 class UserRole(str, Enum):
-    """
-    User role enumeration.
-
-    Defines the available roles in the system:
-    - USER: Standard user with basic permissions
-    - ADMIN: Administrator with full access
-    """
-
     USER = "user"
     ADMIN = "admin"
 
 
 class User(Base):
-    """
-    User model for database storage.
-
-    Stores user account information including:
-    - Authentication credentials (email, password)
-    - Personal information (first_name, last_name)
-    - Verification status and code
-    - Role for access control
-    - Timestamps for tracking
-    """
-
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -79,5 +60,4 @@ class User(Base):
     )
 
     def __repr__(self) -> str:
-        """String representation of User object."""
         return f"<User(uuid={self.uuid}, email={self.email}, role={self.role}, verified={self.is_verified})>"

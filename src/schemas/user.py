@@ -22,18 +22,6 @@ from src.models.user import UserRole
 
 
 class UserSignup(BaseModel):
-    """
-    Schema for user registration.
-
-    Required fields:
-    - email: Valid email address
-    - password: At least 8 characters, maximum 72 characters (bcrypt limit)
-
-    Optional fields:
-    - first_name: User's first name
-    - last_name: User's last name
-    """
-
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=8, max_length=72, description="User password (8-72 characters)")
     first_name: Optional[str] = Field(None, max_length=100, description="User first name")
@@ -52,14 +40,6 @@ class UserSignup(BaseModel):
 
 
 class UserLogin(BaseModel):
-    """
-    Schema for user login.
-
-    Required fields:
-    - email: User's registered email
-    - password: User's password (max 72 characters)
-    """
-
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., max_length=72, description="User password")
 
@@ -69,12 +49,6 @@ class UserLogin(BaseModel):
 
 
 class Token(BaseModel):
-    """
-    Schema for JWT token response.
-
-    Contains both access and refresh tokens for authentication.
-    """
-
     access_token: str = Field(..., description="JWT access token")
     refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
@@ -91,18 +65,10 @@ class Token(BaseModel):
 
 
 class TokenRefresh(BaseModel):
-    """Schema for refreshing access token."""
-
     refresh_token: str = Field(..., description="Valid refresh token")
 
 
 class VerificationRequest(BaseModel):
-    """
-    Schema for email/SMS verification.
-
-    User must provide the verification code sent to their email/phone.
-    """
-
     verification_code: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
 
     model_config = ConfigDict(json_schema_extra={"example": {"verification_code": "123456"}})
@@ -114,27 +80,17 @@ class VerificationRequest(BaseModel):
 
 
 class UserBase(BaseModel):
-    """Base schema with common user fields."""
-
     email: EmailStr
     first_name: Optional[str] = None
     last_name: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    """Schema for creating a new user (internal use)."""
-
     password: str
     role: UserRole = UserRole.USER
 
 
 class UserUpdate(BaseModel):
-    """
-    Schema for updating user information.
-
-    All fields are optional - only provided fields will be updated.
-    """
-
     first_name: Optional[str] = Field(None, max_length=100, description="User first name")
     last_name: Optional[str] = Field(None, max_length=100, description="User last name")
     email: Optional[EmailStr] = Field(None, description="User email address")
@@ -143,14 +99,6 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """
-    Schema for user response.
-
-    This is what clients receive when fetching user data.
-    Password and sensitive fields are excluded.
-    Uses UUID instead of integer ID for security.
-    """
-
     uuid: UUID
     email: str
     first_name: Optional[str] = None
@@ -180,8 +128,6 @@ class UserResponse(BaseModel):
 
 
 class UserListResponse(BaseModel):
-    """Schema for paginated user list response."""
-
     users: list[UserResponse]
     total: int
     page: int
@@ -196,8 +142,6 @@ class UserListResponse(BaseModel):
 
 
 class MessageResponse(BaseModel):
-    """Generic message response schema."""
-
     message: str
     detail: Optional[str] = None
 
