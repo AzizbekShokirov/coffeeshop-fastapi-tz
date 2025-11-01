@@ -8,7 +8,7 @@ set -o nounset
 echo "👷 Starting Celery Worker (Production)..."
 echo "📊 Log level: WARNING"
 
-exec celery -A app.tasks.celery_app worker \
+exec celery -A src.tasks.celery_app worker \
     --loglevel=warning \
     --concurrency=4 \
     --max-tasks-per-child=1000 \

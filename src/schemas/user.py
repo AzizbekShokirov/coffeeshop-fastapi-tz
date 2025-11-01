@@ -14,7 +14,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models.user import UserRole
+from src.models.user import UserRole
 
 # ============================================================================
 # Authentication Schemas
@@ -27,7 +27,7 @@ class UserSignup(BaseModel):
 
     Required fields:
     - email: Valid email address
-    - password: At least 8 characters
+    - password: At least 8 characters, maximum 72 characters (bcrypt limit)
 
     Optional fields:
     - first_name: User's first name
@@ -35,7 +35,7 @@ class UserSignup(BaseModel):
     """
 
     email: EmailStr = Field(..., description="User email address")
-    password: str = Field(..., min_length=8, description="User password (min 8 characters)")
+    password: str = Field(..., min_length=8, max_length=72, description="User password (8-72 characters)")
     first_name: Optional[str] = Field(None, max_length=100, description="User first name")
     last_name: Optional[str] = Field(None, max_length=100, description="User last name")
 
@@ -57,16 +57,14 @@ class UserLogin(BaseModel):
 
     Required fields:
     - email: User's registered email
-    - password: User's password
+    - password: User's password (max 72 characters)
     """
 
     email: EmailStr = Field(..., description="User email address")
-    password: str = Field(..., description="User password")
+    password: str = Field(..., max_length=72, description="User password")
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"email": "user@example.com", "password": "securepassword123"}
-        }
+        json_schema_extra={"example": {"email": "user@example.com", "password": "securepassword123"}}
     )
 
 
@@ -105,9 +103,7 @@ class VerificationRequest(BaseModel):
     User must provide the verification code sent to their email/phone.
     """
 
-    verification_code: str = Field(
-        ..., min_length=6, max_length=6, description="6-digit verification code"
-    )
+    verification_code: str = Field(..., min_length=6, max_length=6, description="6-digit verification code")
 
     model_config = ConfigDict(json_schema_extra={"example": {"verification_code": "123456"}})
 
@@ -143,9 +139,7 @@ class UserUpdate(BaseModel):
     last_name: Optional[str] = Field(None, max_length=100, description="User last name")
     email: Optional[EmailStr] = Field(None, description="User email address")
 
-    model_config = ConfigDict(
-        json_schema_extra={"example": {"first_name": "Jane", "last_name": "Smith"}}
-    )
+    model_config = ConfigDict(json_schema_extra={"example": {"first_name": "Jane", "last_name": "Smith"}})
 
 
 class UserResponse(BaseModel):
@@ -193,9 +187,7 @@ class UserListResponse(BaseModel):
     page: int
     page_size: int
 
-    model_config = ConfigDict(
-        json_schema_extra={"example": {"users": [], "total": 100, "page": 1, "page_size": 10}}
-    )
+    model_config = ConfigDict(json_schema_extra={"example": {"users": [], "total": 100, "page": 1, "page_size": 10}})
 
 
 # ============================================================================
@@ -210,7 +202,5 @@ class MessageResponse(BaseModel):
     detail: Optional[str] = None
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"message": "Operation successful", "detail": "Additional information"}
-        }
+        json_schema_extra={"example": {"message": "Operation successful", "detail": "Additional information"}}
     )

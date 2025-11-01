@@ -13,10 +13,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.core.dependencies import AdminUser, CurrentUser, DatabaseSession
-from app.core.logging import get_logger
-from app.schemas.user import MessageResponse, UserListResponse, UserResponse, UserUpdate
-from app.services.user_service import UserService
+from src.core.dependencies import AdminUser, CurrentUser, DatabaseSession
+from src.core.logging import get_logger
+from src.schemas.user import MessageResponse, UserListResponse, UserResponse, UserUpdate
+from src.services.user_service import UserService
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -98,7 +98,6 @@ async def get_users(
 
     # Get users
     users, total = await user_service.get_users(skip=skip, limit=page_size, is_verified=is_verified)
-
     logger.info(
         f"Retrieved {len(users)} users (total: {total})",
         extra={"admin_uuid": str(admin.uuid), "count": len(users), "total": total},
@@ -142,9 +141,7 @@ async def get_user_by_uuid(
             f"User not found with UUID: {user_uuid}",
             extra={"admin_uuid": str(admin.uuid), "requested_user_uuid": str(user_uuid)},
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User with UUID {user_uuid} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with UUID {user_uuid} not found")
 
     return user
 
@@ -189,41 +186,20 @@ async def update_user(
 
     user_service = UserService(db)
 
-    try:
-        updated_user = await user_service.update_user(
-            user_uuid=user_uuid, user_data=user_data, requesting_user=current_user
-        )
+    updated_user = await user_service.update_user(
+        user_uuid=user_uuid, user_data=user_data, requesting_user=current_user
+    )
 
-        logger.info(
-            "User updated successfully",
-            extra={
-                "requesting_user_uuid": str(current_user.uuid),
-                "updated_user_uuid": str(user_uuid),
-                "action": "update_user",
-            },
-        )
+    logger.info(
+        "User updated successfully",
+        extra={
+            "requesting_user_uuid": str(current_user.uuid),
+            "updated_user_uuid": str(user_uuid),
+            "action": "update_user",
+        },
+    )
 
-        return updated_user
-
-    except ValueError as e:
-        # Determine status code based on error message
-        if "not found" in str(e).lower():
-            status_code = status.HTTP_404_NOT_FOUND
-        elif "permission" in str(e).lower():
-            status_code = status.HTTP_403_FORBIDDEN
-        else:
-            status_code = status.HTTP_400_BAD_REQUEST
-
-        logger.warning(
-            f"User update failed: {str(e)}",
-            extra={
-                "requesting_user_uuid": str(current_user.uuid),
-                "target_user_uuid": str(user_uuid),
-                "error": str(e),
-            },
-        )
-
-        raise HTTPException(status_code=status_code, detail=str(e))
+    return updated_user
 
 
 @router.delete(
@@ -257,36 +233,18 @@ async def delete_user(
 
     user_service = UserService(db)
 
-    try:
-        await user_service.delete_user(user_uuid=user_uuid, requesting_user=admin)
+    await user_service.delete_user(user_uuid=user_uuid, requesting_user=admin)
 
-        logger.warning(
-            f"User deleted: {user_uuid}",
-            extra={
-                "admin_uuid": str(admin.uuid),
-                "deleted_user_uuid": str(user_uuid),
-                "action": "delete_user_success",
-            },
-        )
+    logger.warning(
+        f"User deleted: {user_uuid}",
+        extra={
+            "admin_uuid": str(admin.uuid),
+            "deleted_user_uuid": str(user_uuid),
+            "action": "delete_user_success",
+        },
+    )
 
-        return MessageResponse(
-            message="User deleted successfully",
-            detail=f"User with UUID {user_uuid} has been permanently deleted",
-        )
-
-    except ValueError as e:
-        if "not found" in str(e).lower():
-            status_code = status.HTTP_404_NOT_FOUND
-        else:
-            status_code = status.HTTP_400_BAD_REQUEST
-
-        logger.error(
-            f"User deletion failed: {str(e)}",
-            extra={
-                "admin_uuid": str(admin.uuid),
-                "target_user_uuid": str(user_uuid),
-                "error": str(e),
-            },
-        )
-
-        raise HTTPException(status_code=status_code, detail=str(e))
+    return MessageResponse(
+        message="User deleted successfully",
+        detail=f"User with UUID {user_uuid} has been permanently deleted",
+    )

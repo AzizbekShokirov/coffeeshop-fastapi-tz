@@ -14,7 +14,7 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from app.core.logging import get_logger
+from src.core.logging import get_logger
 
 logger = get_logger(__name__)
 

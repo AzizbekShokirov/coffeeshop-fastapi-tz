@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from app.core.config import settings
+from src.core.config import settings
 
 
 class ColoredFormatter(logging.Formatter):
@@ -54,9 +54,7 @@ class RequestLogger:
     Context manager for logging API requests with timing.
     """
 
-    def __init__(
-        self, logger: logging.Logger, endpoint: str, method: str, user_id: int | None = None
-    ):
+    def __init__(self, logger: logging.Logger, endpoint: str, method: str, user_id: int | None = None):
         self.logger = logger
         self.endpoint = endpoint
         self.method = method
@@ -149,9 +147,7 @@ def setup_logging() -> None:
     root_logger.addHandler(console_handler)
 
     # File Handler (always active)
-    file_handler = logging.FileHandler(
-        logs_dir / f"app_{datetime.now().strftime('%Y%m%d')}.log", encoding="utf-8"
-    )
+    file_handler = logging.FileHandler(logs_dir / f"app_{datetime.now().strftime('%Y%m%d')}.log", encoding="utf-8")
     file_handler.setLevel(logging.INFO)
     file_format = logging.Formatter(
         fmt="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s",
@@ -161,9 +157,7 @@ def setup_logging() -> None:
     root_logger.addHandler(file_handler)
 
     # Error File Handler (only errors and above)
-    error_handler = logging.FileHandler(
-        logs_dir / f"errors_{datetime.now().strftime('%Y%m%d')}.log", encoding="utf-8"
-    )
+    error_handler = logging.FileHandler(logs_dir / f"errors_{datetime.now().strftime('%Y%m%d')}.log", encoding="utf-8")
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(file_format)
     root_logger.addHandler(error_handler)
@@ -218,9 +212,7 @@ def log_request(endpoint: str, method: str, user_id: int | None = None) -> Reque
     return RequestLogger(logger, endpoint, method, user_id)
 
 
-def log_error(
-    logger: logging.Logger, error: Exception, context: dict[str, Any] | None = None
-) -> None:
+def log_error(logger: logging.Logger, error: Exception, context: dict[str, Any] | None = None) -> None:
     """
     Log an error with context information.
 

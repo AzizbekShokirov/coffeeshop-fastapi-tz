@@ -15,16 +15,26 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # Import your app's config and models
-from app.core.config import settings
-from app.core.database import Base
+from src.core.config import settings
+from src.core.database import Base
 
 # Import all models here so Alembic can detect them
-from app.models.user import User  # noqa: F401 - imported for Alembic autogenerate
+from src.models.user import User  # noqa: F401 - imported for Alembic autogenerate
 
-# Alembic Config object
+# Define naming convention for clearer migrations
+convention = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
+
+# Apply naming convention to metadata
+Base.metadata.naming_convention = convention
 config = context.config
 
-# Set the database URL from application settings
+# Set the database URL from srclication settings
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Setup logging

@@ -10,10 +10,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.router import api_router
-from app.core.config import settings
-from app.core.logging import get_logger, setup_logging
-from app.core.middleware import RequestLoggingMiddleware
+from src.api.v1.router import api_router
+from src.core.config import settings
+from src.core.handlers import register_exception_handlers
+from src.core.logging import get_logger, setup_logging
+from src.core.middleware import RequestLoggingMiddleware
 
 # Setup logging before anything else
 setup_logging()
@@ -33,7 +34,6 @@ async def lifespan(app: FastAPI):
 
     # Initialize database tables (in production, use Alembic migrations)
     # await init_db()  # Uncomment if you want auto table creation
-
     yield
 
     # Shutdown
@@ -63,6 +63,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Register exception handlers
+register_exception_handlers(app)
 
 
 # Include API router

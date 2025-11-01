@@ -45,12 +45,12 @@ services:
       - coffeeshop_network
 
   # FastAPI Application - Development
-  api:
+  fastapi:
     build:
       context: .
       dockerfile: ./compose/local/fastapi/Dockerfile
-    image: coffeeshop_api_dev
-    container_name: coffeeshop_api_dev
+    image: coffeeshop_fastapi_dev
+    container_name: coffeeshop_fastapi_dev
     command: /start
     volumes:
       - .:/app:z

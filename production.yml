@@ -46,12 +46,12 @@ services:
       - coffeeshop_network
 
   # FastAPI Application - Production
-  api:
+  fastapi:
     build:
       context: .
       dockerfile: ./compose/production/fastapi/Dockerfile
-    image: coffeeshop_api_prod
-    container_name: coffeeshop_api_prod
+    image: coffeeshop_fastapi_dev
+    container_name: coffeeshop_fastapi_dev
     command: /start
     env_file:
       - ./.envs/production/.env.database

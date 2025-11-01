@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     VERIFICATION_CODE_EXPIRATION: int = 3  # 3 minutes
     UNVERIFIED_USER_DELETE_DAYS: int = 2
 
-    # Redis (for Celery)
+    # Redis (forOhh.  Celery)
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # Email Configuration (Optional - for verification emails)
@@ -50,9 +50,7 @@ class Settings(BaseSettings):
     FIRST_ADMIN_EMAIL: str
     FIRST_ADMIN_PASSWORD: str
 
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
 
 
 # Create a global settings instance

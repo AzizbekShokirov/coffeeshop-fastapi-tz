@@ -5,14 +5,16 @@ This module sets up Celery for background task processing.
 Main tasks include:
 - Automatic cleanup of unverified users after 2 days
 - Email/SMS sending (in production)
-- Report generation
-- Data exports
 """
+
+import asyncio
 
 from celery import Celery
 from celery.schedules import crontab
 
-from app.core.config import settings
+from src.core.config import settings
+from src.core.database import async_session_factory
+from src.repositories.user_repository import UserRepository
 
 # Create Celery instance
 celery_app = Celery("coffeeshop", broker=settings.REDIS_URL, backend=settings.REDIS_URL)
@@ -32,13 +34,13 @@ celery_app.conf.update(
 # Periodic task schedule
 celery_app.conf.beat_schedule = {
     "cleanup-unverified-users": {
-        "task": "app.tasks.celery_app.cleanup_unverified_users",
+        "task": "src.tasks.celery_app.cleanup_unverified_users",
         "schedule": crontab(hour=2, minute=0),  # Run daily at 2 AM
     },
 }
 
 
-@celery_app.task(name="app.tasks.celery_app.cleanup_unverified_users")
+@celery_app.task(name="src.tasks.celery_app.cleanup_unverified_users")
 def cleanup_unverified_users():
     """
     Periodic task to clean up unverified users.
@@ -52,42 +54,33 @@ def cleanup_unverified_users():
     For production, consider using celery-aio or running async
     code with asyncio.run().
     """
-    import asyncio
-
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-    from app.repositories.user_repository import UserRepository
 
     async def cleanup():
         """Async function to perform cleanup."""
-        # Create async engine and session
-        engine = create_async_engine(settings.DATABASE_URL)
-        async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async with async_session_factory() as session:
+            async with session.begin():
+                user_repo = UserRepository(session)
 
-        async with async_session() as session:
-            user_repo = UserRepository(session)
+                # Get unverified users older than configured days
+                unverified_users = await user_repo.get_unverified_users_older_than(
+                    days=settings.UNVERIFIED_USER_DELETE_DAYS
+                )
 
-            # Get unverified users older than configured days
-            unverified_users = await user_repo.get_unverified_users_older_than(
-                days=settings.UNVERIFIED_USER_DELETE_DAYS
-            )
+                if not unverified_users:
+                    print("✅ No unverified users to clean up")
+                    return 0
 
-            if not unverified_users:
-                print("✅ No unverified users to clean up")
-                return 0
+                # Delete users in a single atomic transaction
+                deleted_count = await user_repo.bulk_delete(unverified_users)
 
-            # Delete users
-            deleted_count = await user_repo.bulk_delete(unverified_users)
+                print(f"🗑️  Cleaned up {deleted_count} unverified users")
 
-            print(f"🗑️  Cleaned up {deleted_count} unverified users")
+                # Log deleted emails for audit
+                for user in unverified_users:
+                    print(f"   - Deleted: {user.email} (created: {user.created_at})")
 
-            # Log deleted emails for audit
-            for user in unverified_users:
-                print(f"   - Deleted: {user.email} (created: {user.created_at})")
-
-            return deleted_count
-
-        await engine.dispose()
+                return deleted_count
+            # Transaction automatically commits when exiting session.begin() context
 
     # Run async cleanup
     try:
@@ -102,30 +95,16 @@ def cleanup_unverified_users():
         return {"status": "error", "message": str(e)}
 
 
-@celery_app.task(name="app.tasks.celery_app.send_verification_email")
+@celery_app.task(name="src.tasks.celery_app.send_verification_email")
 def send_verification_email(email: str, code: str):
-    """
-    Task to send verification email.
-
-    Args:
-        email: Recipient email
-        code: Verification code
-    """
     # TODO: Implement actual email sending
     print(f"📧 Sending verification email to {email} with code {code}")
 
     return {"status": "sent", "email": email}
 
 
-@celery_app.task(name="app.tasks.celery_app.send_verification_sms")
+@celery_app.task(name="src.tasks.celery_app.send_verification_sms")
 def send_verification_sms(phone: str, code: str):
-    """
-    Task to send verification SMS.
-
-    Args:
-        phone: Recipient phone number
-        code: Verification code
-    """
     # TODO: Implement actual SMS sending
     print(f"📱 Sending verification SMS to {phone} with code {code}")
 

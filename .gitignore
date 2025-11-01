@@ -26,16 +26,13 @@ env/
 ENV/
 .venv
 
-# UV
-.uv/
-uv.lock
-
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.ruff_cache
 
 # Environment
 .env
@@ -76,7 +73,6 @@ Thumbs.db
 htmlcov/
 
 # Alembic
-alembic/versions/*.py
 !alembic/versions/.gitkeep
 
 # Celery

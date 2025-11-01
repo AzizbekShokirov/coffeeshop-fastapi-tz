@@ -13,10 +13,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
-from app.core.security import decode_token
-from app.models.user import User, UserRole
-from app.repositories.user_repository import UserRepository
+from src.core.database import get_db
+from src.core.security import decode_token
+from src.models.user import User, UserRole
+from src.repositories.user_repository import UserRepository
 
 # Security scheme for JWT Bearer token
 security = HTTPBearer()
@@ -82,9 +82,7 @@ async def get_current_user(
 
     # Check if user is active
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="User account is deactivated"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is deactivated")
 
     return user
 
@@ -140,7 +138,7 @@ async def require_admin(current_user: Annotated[User, Depends(get_current_user)]
 
 
 # Type aliases for cleaner endpoint signatures
+DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 VerifiedUser = Annotated[User, Depends(get_current_verified_user)]
 AdminUser = Annotated[User, Depends(require_admin)]
-DatabaseSession = Annotated[AsyncSession, Depends(get_db)]

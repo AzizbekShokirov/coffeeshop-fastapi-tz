@@ -18,18 +18,19 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.core.logging import get_logger
-from app.core.security import (
+from src.core.config import settings
+from src.core.exceptions import AppException
+from src.core.logging import get_logger
+from src.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
     get_password_hash,
     verify_password,
 )
-from app.models.user import User, UserRole
-from app.repositories.user_repository import UserRepository
-from app.schemas.user import Token, UserLogin, UserSignup
+from src.models.user import User, UserRole
+from src.repositories.user_repository import UserRepository
+from src.schemas.user import Token, UserLogin, UserSignup
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -37,44 +38,19 @@ logger = get_logger(__name__)
 
 class AuthService:
     """
-    Service class for authentication operations.
+    Service class for auth management operations.
 
-    Handles user registration, login, verification, and token management.
+    Handles user authentication and authorization logic.
     """
 
-    def __init__(self, db: AsyncSession):
-        """
-        Initialize service with database session.
-
-        Args:
-            db: Async SQLAlchemy session
-        """
-        self.db = db
-        self.user_repo = UserRepository(db)
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.user_repo = UserRepository(session)
 
     async def signup(self, user_data: UserSignup) -> tuple[User, str]:
-        """
-        Register a new user.
-
-        Process:
-        1. Check if email already exists
-        2. Hash password
-        3. Create user with is_verified=False
-        4. Generate verification code
-        5. Send verification code (logged to console for demo)
-
-        Args:
-            user_data: User registration data
-
-        Returns:
-            Tuple of (created user, verification code)
-
-        Raises:
-            ValueError: If email already exists
-        """
         # Check if email already exists
         if await self.user_repo.email_exists(user_data.email):
-            raise ValueError("Email already registered")
+            raise AppException("Email already registered", 409)
 
         # Hash password
         hashed_password = get_password_hash(user_data.password)
@@ -103,36 +79,18 @@ class AuthService:
         return user, verification_code
 
     async def login(self, login_data: UserLogin) -> Token:
-        """
-        Authenticate user and generate tokens.
-
-        Process:
-        1. Find user by email
-        2. Verify password
-        3. Check if user is active
-        4. Generate access and refresh tokens
-
-        Args:
-            login_data: User login credentials
-
-        Returns:
-            Token object with access and refresh tokens
-
-        Raises:
-            ValueError: If credentials are invalid or user not found
-        """
         # Find user by email
         user = await self.user_repo.get_by_email(login_data.email)
         if not user:
-            raise ValueError("Invalid email or password")
+            raise AppException("Invalid email or password", 401)
 
         # Verify password
         if not verify_password(login_data.password, user.hashed_password):
-            raise ValueError("Invalid email or password")
+            raise AppException("Invalid email or password", 401)
 
         # Check if user is active
         if not user.is_active:
-            raise ValueError("User account is deactivated")
+            raise AppException("User account is deactivated", 403)
 
         # Generate tokens
         access_token = create_access_token(data={"sub": str(user.uuid), "email": user.email})
@@ -145,45 +103,23 @@ class AuthService:
         )
 
     async def verify_user(self, user_uuid: UUID, verification_code: str) -> User:
-        """
-        Verify user's email/phone with verification code.
-
-        Process:
-        1. Find user by UUID
-        2. Check if already verified
-        3. Validate verification code
-        4. Check if code has expired
-        5. Mark user as verified
-
-        Args:
-            user_uuid: User's UUID
-            verification_code: 6-digit verification code
-
-        Returns:
-            Verified user
-
-        Raises:
-            ValueError: If verification fails
-        """
         user = await self.user_repo.get_by_uuid(user_uuid)
         if not user:
-            raise ValueError("User not found")
+            raise AppException("User not found", 404)
 
         # Check if already verified
         if user.is_verified:
-            raise ValueError("User already verified")
+            raise AppException("User already verified", 400)
 
         # Check if verification code matches
         if user.verification_code != verification_code:
-            raise ValueError("Invalid verification code")
+            raise AppException("Invalid verification code", 400)
 
         # Check if code has expired
         if user.verification_code_created_at:
-            expiry_time = user.verification_code_created_at + timedelta(
-                minutes=settings.VERIFICATION_CODE_EXPIRATION
-            )
+            expiry_time = user.verification_code_created_at + timedelta(minutes=settings.VERIFICATION_CODE_EXPIRATION)
             if datetime.now(timezone.utc) > expiry_time:
-                raise ValueError("Verification code has expired")
+                raise AppException("Verification code has expired", 400)
 
         # Mark user as verified
         user = await self.user_repo.verify_user(user)
@@ -193,45 +129,27 @@ class AuthService:
         return user
 
     async def refresh_access_token(self, refresh_token: str) -> Token:
-        """
-        Generate new access token using refresh token.
-
-        Process:
-        1. Decode and validate refresh token
-        2. Check token type
-        3. Find user
-        4. Generate new access token
-
-        Args:
-            refresh_token: Valid refresh token
-
-        Returns:
-            New token pair
-
-        Raises:
-            ValueError: If refresh token is invalid
-        """
         # Decode token
         payload = decode_token(refresh_token)
         if not payload:
-            raise ValueError("Invalid refresh token")
+            raise AppException("Invalid refresh token", 401)
 
         # Check token type
         if payload.get("type") != "refresh":
-            raise ValueError("Invalid token type")
+            raise AppException("Invalid token type", 401)
 
         # Get user UUID from token
         user_uuid_str = payload.get("sub")
         if not user_uuid_str:
-            raise ValueError("Invalid token payload")
+            raise AppException("Invalid token payload", 401)
 
         # Find user by UUID
         user = await self.user_repo.get_by_uuid(UUID(user_uuid_str))
         if not user:
-            raise ValueError("User not found")
+            raise AppException("User not found", 404)
 
         if not user.is_active:
-            raise ValueError("User account is deactivated")
+            raise AppException("User account is deactivated", 403)
 
         # Generate new tokens
         access_token = create_access_token(data={"sub": str(user.uuid), "email": user.email})
@@ -244,24 +162,12 @@ class AuthService:
         )
 
     async def resend_verification_code(self, user_uuid: UUID) -> str:
-        """
-        Resend verification code to user.
-
-        Args:
-            user_uuid: User's UUID
-
-        Returns:
-            New verification code
-
-        Raises:
-            ValueError: If user not found or already verified
-        """
         user = await self.user_repo.get_by_uuid(user_uuid)
         if not user:
-            raise ValueError("User not found")
+            raise AppException("User not found", 404)
 
         if user.is_verified:
-            raise ValueError("User already verified")
+            raise AppException("User already verified", 400)
 
         # Generate new verification code
         verification_code = self._generate_verification_code()
@@ -273,22 +179,9 @@ class AuthService:
         return verification_code
 
     def _generate_verification_code(self) -> str:
-        """
-        Generate a random 6-digit verification code.
-
-        Returns:
-            6-digit verification code as string
-        """
         return str(secrets.randbelow(1000000)).zfill(6)
 
     def _send_verification_code(self, email: str, code: str) -> None:
-        """
-        Send verification code to user.
-
-        Args:
-            email: User's email
-            code: Verification code
-        """
         print("\n" + "=" * 60)
         print("📧 VERIFICATION CODE (Console Output for Demo)")
         print("=" * 60)

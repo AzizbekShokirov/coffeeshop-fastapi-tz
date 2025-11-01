@@ -50,7 +50,7 @@ docker compose -f local.yml up -d --build
 
 # View logs
 docker compose -f local.yml logs -f          # All services
-docker compose -f local.yml logs -f api      # API only
+docker compose -f local.yml logs -f fastapi      # API only
 docker compose -f local.yml logs -f celery_worker   # Celery worker
 
 # Stop services
@@ -58,11 +58,11 @@ docker compose -f local.yml down            # Stop containers
 docker compose -f local.yml down -v         # Stop and remove volumes (⚠️ This deletes the database!)
 
 # Restart services
-docker compose -f local.yml restart api
+docker compose -f local.yml restart fastapi
 docker compose -f local.yml restart celery_worker
 
 # Access container shells
-docker compose -f local.yml exec api bash           # API container
+docker compose -f local.yml exec fastapi bash           # API container
 docker compose -f local.yml exec postgres psql -U postgres  # Database
 docker compose -f local.yml exec redis redis-cli    # Redis
 
@@ -82,7 +82,7 @@ docker compose -f production.yml up -d --build
 
 # View logs
 docker compose -f production.yml logs -f          # All services
-docker compose -f production.yml logs -f api      # API only
+docker compose -f production.yml logs -f fastapi      # API only
 docker compose -f production.yml logs -f nginx    # Nginx logs
 
 # Stop services
@@ -90,11 +90,11 @@ docker compose -f production.yml down            # Stop containers
 docker compose -f production.yml down -v         # Stop and remove volumes
 
 # Restart services
-docker compose -f production.yml restart api
+docker compose -f production.yml restart fastapi
 docker compose -f production.yml restart nginx
 
 # Access container shells
-docker compose -f production.yml exec api bash
+docker compose -f production.yml exec fastapi bash
 docker compose -f production.yml exec postgres psql -U postgres
 
 # Access the application
@@ -135,32 +135,6 @@ coffeeshop-fastapi-tz/
 │   ├── versions/               # Migration files
 │   ├── env.py                  # Alembic environment
 │   └── script.py.mako          # Migration template
-├── app/                        # Application source code
-│   ├── api/
-│   │   └── v1/
-│   │       ├── endpoints/
-│   │       │   ├── auth.py     # Authentication endpoints
-│   │       │   └── users.py    # User management endpoints
-│   │       └── router.py       # API v1 router
-│   ├── core/
-│   │   ├── config.py           # Application settings
-│   │   ├── database.py         # Database connection
-│   │   ├── dependencies.py     # Dependency injection (auth, db)
-│   │   ├── logging.py          # Logging configuration
-│   │   ├── middleware.py       # Custom middleware
-│   │   └── security.py         # JWT and password utilities
-│   ├── models/
-│   │   └── user.py             # SQLAlchemy User model
-│   ├── repositories/
-│   │   └── user_repository.py  # Data access layer
-│   ├── schemas/
-│   │   └── user.py             # Pydantic schemas for validation
-│   ├── services/
-│   │   ├── auth_service.py     # Business logic for auth
-│   │   └── user_service.py     # Business logic for users
-│   ├── tasks/
-│   │   └── celery_app.py       # Celery configuration
-│   └── main.py                 # FastAPI application entry point
 ├── compose/                    # Docker configurations
 │   ├── development/
 │   │   ├── fastapi/
@@ -199,6 +173,32 @@ coffeeshop-fastapi-tz/
 │           ├── Dockerfile      # PostgreSQL container
 │           └── postgresql.conf # PostgreSQL configuration
 ├── logs/                       # Application logs
+├── src/                        # Application source code
+│   ├── api/
+│   │   └── v1/
+│   │       ├── endpoints/
+│   │       │   ├── auth.py     # Authentication endpoints
+│   │       │   └── users.py    # User management endpoints
+│   │       └── router.py       # API v1 router
+│   ├── core/
+│   │   ├── config.py           # Application settings
+│   │   ├── database.py         # Database connection
+│   │   ├── dependencies.py     # Dependency injection (auth, db)
+│   │   ├── logging.py          # Logging configuration
+│   │   ├── middleware.py       # Custom middleware
+│   │   └── security.py         # JWT and password utilities
+│   ├── models/
+│   │   └── user.py             # SQLAlchemy User model
+│   ├── repositories/
+│   │   └── user_repository.py  # Data access layer
+│   ├── schemas/
+│   │   └── user.py             # Pydantic schemas for validation
+│   ├── services/
+│   │   ├── auth_service.py     # Business logic for auth
+│   │   └── user_service.py     # Business logic for users
+│   ├── tasks/
+│   │   └── celery_app.py       # Celery configuration
+│   └── main.py                 # FastAPI application entry point
 ├── tests/                      # Test suite
 │   └── api/
 │       └── v1/
@@ -221,22 +221,22 @@ coffeeshop-fastapi-tz/
 
 ### Layered Architecture
 
-1. **API Layer** (`app/api/`)
+1. **API Layer** (`src/api/`)
    - Handles HTTP requests/responses
    - Input validation via Pydantic
    - Route definitions
 
-2. **Service Layer** (`app/services/`)
+2. **Service Layer** (`src/services/`)
    - Business logic
    - Orchestrates operations between repositories
    - Handles transactions
 
-3. **Repository Layer** (`app/repositories/`)
+3. **Repository Layer** (`src/repositories/`)
    - Data access abstraction
    - Database queries
    - ORM operations
 
-4. **Model Layer** (`app/models/`)
+4. **Model Layer** (`src/models/`)
    - SQLAlchemy ORM models
    - Database schema definitions
 

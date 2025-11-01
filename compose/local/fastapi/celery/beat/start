@@ -11,5 +11,5 @@ echo "📊 Log level: INFO"
 # Remove old schedule file to avoid issues
 rm -f /app/celerybeat-schedule
 
-exec celery -A app.tasks.celery_app beat \
+exec celery -A src.tasks.celery_app beat \
     --loglevel=info

@@ -12,10 +12,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole
+from src.models.user import User, UserRole
 
 
 class UserRepository:
@@ -30,65 +30,22 @@ class UserRepository:
     """
 
     def __init__(self, db: AsyncSession):
-        """
-        Initialize repository with database session.
-
-        Args:
-            db: Async SQLAlchemy session
-        """
         self.db = db
 
     async def create(self, user: User) -> User:
-        """
-        Create a new user in the database.
-
-        Args:
-            user: User object to create
-
-        Returns:
-            User: Created user with assigned ID
-        """
         self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        await self.db.flush()  # Flush to get database-generated ID and UUID
         return user
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
-        """
-        Get user by ID (internal use only).
-
-        Args:
-            user_id: User's ID
-
-        Returns:
-            User if found, None otherwise
-        """
         result = await self.db.execute(select(User).where(User.id == user_id))
         return result.scalar_one_or_none()
 
     async def get_by_uuid(self, user_uuid: UUID) -> Optional[User]:
-        """
-        Get user by UUID (for API use).
-
-        Args:
-            user_uuid: User's UUID
-
-        Returns:
-            User if found, None otherwise
-        """
         result = await self.db.execute(select(User).where(User.uuid == user_uuid))
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> Optional[User]:
-        """
-        Get user by email address.
-
-        Args:
-            email: User's email
-
-        Returns:
-            User if found, None otherwise
-        """
         result = await self.db.execute(select(User).where(User.email == email))
         return result.scalar_one_or_none()
 
@@ -99,18 +56,6 @@ class UserRepository:
         role: Optional[UserRole] = None,
         is_verified: Optional[bool] = None,
     ) -> list[User]:
-        """
-        Get all users with optional filtering and pagination.
-
-        Args:
-            skip: Number of records to skip
-            limit: Maximum number of records to return
-            role: Filter by user role
-            is_verified: Filter by verification status
-
-        Returns:
-            List of users
-        """
         query = select(User)
 
         # Apply filters
@@ -125,19 +70,7 @@ class UserRepository:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def count(
-        self, role: Optional[UserRole] = None, is_verified: Optional[bool] = None
-    ) -> int:
-        """
-        Count users with optional filtering.
-
-        Args:
-            role: Filter by user role
-            is_verified: Filter by verification status
-
-        Returns:
-            Total count of users
-        """
+    async def count(self, role: Optional[UserRole] = None, is_verified: Optional[bool] = None) -> int:
         query = select(func.count(User.id))
 
         # Apply filters
@@ -150,41 +83,16 @@ class UserRepository:
         return result.scalar_one()
 
     async def update(self, user: User) -> User:
-        """
-        Update user in the database.
-
-        Args:
-            user: User object with updated fields
-
-        Returns:
-            Updated user
-        """
         user.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
-        await self.db.refresh(user)
+        self.db.add(user)  # Ensure the user is tracked by the session
+        await self.db.flush()  # Flush to persist changes
         return user
 
     async def delete(self, user: User) -> None:
-        """
-        Delete user from the database.
-
-        Args:
-            user: User object to delete
-        """
         await self.db.delete(user)
-        await self.db.commit()
+        await self.db.flush()  # Flush to ensure deletion is processed
 
     async def email_exists(self, email: str, exclude_user_id: Optional[int] = None) -> bool:
-        """
-        Check if email already exists in the database.
-
-        Args:
-            email: Email to check
-            exclude_user_id: Optionally exclude a specific user ID (for updates)
-
-        Returns:
-            True if email exists, False otherwise
-        """
         query = select(User).where(User.email == email)
 
         if exclude_user_id is not None:
@@ -194,47 +102,18 @@ class UserRepository:
         return result.scalar_one_or_none() is not None
 
     async def set_verification_code(self, user: User, code: str) -> User:
-        """
-        Set verification code for user.
-
-        Args:
-            user: User to update
-            code: Verification code
-
-        Returns:
-            Updated user
-        """
         user.verification_code = code
         user.verification_code_created_at = datetime.now(timezone.utc)
-        return await self.update(user)
+        await self.db.flush()  # Flush to persist verification code
+        return user
 
     async def verify_user(self, user: User) -> User:
-        """
-        Mark user as verified and clear verification code.
-
-        Args:
-            user: User to verify
-
-        Returns:
-            Updated user
-        """
         user.is_verified = True
         user.verification_code = None
         user.verification_code_created_at = None
         return await self.update(user)
 
     async def get_unverified_users_older_than(self, days: int) -> list[User]:
-        """
-        Get unverified users created more than specified days ago.
-
-        This is used for automatic cleanup of abandoned registrations.
-
-        Args:
-            days: Number of days threshold
-
-        Returns:
-            List of unverified users older than threshold
-        """
         threshold_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         result = await self.db.execute(
@@ -243,19 +122,8 @@ class UserRepository:
         return list(result.scalars().all())
 
     async def bulk_delete(self, users: list[User]) -> int:
-        """
-        Delete multiple users at once.
-
-        Args:
-            users: List of users to delete
-
-        Returns:
-            Number of deleted users
-        """
-        count = 0
-        for user in users:
-            await self.db.delete(user)
-            count += 1
-
-        await self.db.commit()
-        return count
+        user_ids = [user.id for user in users]
+        stmt = delete(User).where(User.id.in_(user_ids))
+        result = await self.db.execute(stmt)
+        await self.db.flush()  # Flush to ensure bulk deletion is processed
+        return result.rowcount

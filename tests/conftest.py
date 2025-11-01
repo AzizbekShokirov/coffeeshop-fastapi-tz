@@ -12,14 +12,14 @@ from typing import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
-from app.core.config import settings
-from app.core.database import Base, get_db
-from app.main import app
+from src.core.config import settings
+from src.core.database import Base, get_db
+from src.main import app
 
 # Test database URL (use a separate test database)
 TEST_DATABASE_URL = settings.DATABASE_URL.replace("/coffeeshop_db", "/coffeeshop_test_db")
@@ -57,7 +57,11 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     This fixture:
     1. Creates all tables before the test
     2. Provides a clean database session
-    3. Drops all tables after the test
+    3. Commits data during the test (mimics production behavior)
+    4. Drops all tables after the test
+
+    Note: We commit during tests to match production behavior where
+    get_db() dependency commits after successful operations.
     """
     # Create tables
     async with test_engine.begin() as conn:
@@ -65,8 +69,13 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
     # Create session
     async with TestSessionLocal() as session:
-        yield session
-        await session.rollback()
+        try:
+            yield session
+            # Commit any pending changes (mimics production get_db behavior)
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
     # Drop tables
     async with test_engine.begin() as conn:
@@ -79,14 +88,24 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     Create an async HTTP client for testing.
 
     This fixture overrides the database dependency to use the test database.
+    The overridden dependency mimics production behavior by committing on success.
     """
 
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
+        """
+        Override get_db to use test session.
+        Mimics production behavior: commit on success, rollback on error.
+        """
+        try:
+            yield db_session
+            await db_session.commit()
+        except Exception:
+            await db_session.rollback()
+            raise
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()

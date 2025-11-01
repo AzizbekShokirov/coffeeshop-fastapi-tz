@@ -48,6 +48,10 @@ if [[ "$1" == "/start" ]]; then
     echo "🔄 Running database migrations..."
     alembic upgrade head
     echo "✅ Database migrations completed"
+
+    echo "👤 Creating initial admin user..."
+    python scripts/create_admin.py
+    echo "✅ Admin user setup completed"
 fi
 
 echo "✅ Entrypoint completed successfully"

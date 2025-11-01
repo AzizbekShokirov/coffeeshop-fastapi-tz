@@ -8,12 +8,12 @@ This module provides endpoints for:
 - Token refresh
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 
-from app.core.config import settings
-from app.core.dependencies import CurrentUser, DatabaseSession
-from app.core.logging import get_logger
-from app.schemas.user import (
+from src.core.config import settings
+from src.core.dependencies import CurrentUser, DatabaseSession
+from src.core.logging import get_logger
+from src.schemas.user import (
     MessageResponse,
     Token,
     TokenRefresh,
@@ -22,7 +22,7 @@ from app.schemas.user import (
     UserSignup,
     VerificationRequest,
 )
-from app.services.auth_service import AuthService
+from src.services.auth_service import AuthService
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -63,26 +63,18 @@ async def signup(
 
     auth_service = AuthService(db)
 
-    try:
-        user, verification_code = await auth_service.signup(user_data)
+    user, verification_code = await auth_service.signup(user_data)
 
-        logger.info(
-            "User registered successfully",
-            extra={"user_uuid": str(user.uuid), "email": user.email, "action": "signup"},
-        )
+    logger.info(
+        "User registered successfully",
+        extra={"user_uuid": str(user.uuid), "email": user.email, "action": "signup"},
+    )
 
-        # In production, verification code is sent via email/SMS
-        # For demo, it's logged to console
-        logger.debug(f"Verification code for {user.email}: {verification_code}")
+    # In production, verification code is sent via email/SMS
+    # For demo, it's logged to console
+    logger.debug(f"Verification code for {user.email}: {verification_code}")
 
-        return user
-
-    except ValueError as e:
-        logger.warning(
-            f"Signup failed for {user_data.email}: {str(e)}",
-            extra={"email": user_data.email, "error": str(e)},
-        )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return user
 
 
 @router.post(
@@ -110,25 +102,11 @@ async def login(
 
     auth_service = AuthService(db)
 
-    try:
-        token = await auth_service.login(login_data)
+    token = await auth_service.login(login_data)
 
-        logger.info(
-            "User logged in successfully", extra={"email": login_data.email, "action": "login"}
-        )
+    logger.info("User logged in successfully", extra={"email": login_data.email, "action": "login"})
 
-        return token
-
-    except ValueError as e:
-        logger.warning(
-            f"Login failed for {login_data.email}: {str(e)}",
-            extra={"email": login_data.email, "error": str(e)},
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return token
 
 
 @router.post(
@@ -163,29 +141,21 @@ async def verify(
 
     auth_service = AuthService(db)
 
-    try:
-        await auth_service.verify_user(current_user.uuid, verification_data.verification_code)
+    await auth_service.verify_user(current_user.uuid, verification_data.verification_code)
 
-        logger.info(
-            "User verified successfully",
-            extra={
-                "user_uuid": str(current_user.uuid),
-                "email": current_user.email,
-                "action": "verify",
-            },
-        )
+    logger.info(
+        "User verified successfully",
+        extra={
+            "user_uuid": str(current_user.uuid),
+            "email": current_user.email,
+            "action": "verify",
+        },
+    )
 
-        return MessageResponse(
-            message="Account verified successfully",
-            detail="Your account has been verified. You now have full access.",
-        )
-
-    except ValueError as e:
-        logger.warning(
-            f"Verification failed for user {current_user.email}: {str(e)}",
-            extra={"user_uuid": str(current_user.uuid), "error": str(e)},
-        )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return MessageResponse(
+        message="Account verified successfully",
+        detail="Your account has been verified. You now have full access.",
+    )
 
 
 @router.post(
@@ -215,20 +185,11 @@ async def refresh_token(
 
     auth_service = AuthService(db)
 
-    try:
-        token = await auth_service.refresh_access_token(refresh_data.refresh_token)
+    token = await auth_service.refresh_access_token(refresh_data.refresh_token)
 
-        logger.info("Token refreshed successfully", extra={"action": "refresh_token"})
+    logger.info("Token refreshed successfully", extra={"action": "refresh_token"})
 
-        return token
-
-    except ValueError as e:
-        logger.warning(f"Token refresh failed: {str(e)}", extra={"error": str(e)})
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return token
 
 
 @router.post(
@@ -259,26 +220,18 @@ async def resend_verification(
 
     auth_service = AuthService(db)
 
-    try:
-        await auth_service.resend_verification_code(current_user.uuid)
+    await auth_service.resend_verification_code(current_user.uuid)
 
-        logger.info(
-            "Verification code resent successfully",
-            extra={
-                "user_uuid": str(current_user.uuid),
-                "email": current_user.email,
-                "action": "resend_verification",
-            },
-        )
+    logger.info(
+        "Verification code resent successfully",
+        extra={
+            "user_uuid": str(current_user.uuid),
+            "email": current_user.email,
+            "action": "resend_verification",
+        },
+    )
 
-        return MessageResponse(
-            message="Verification code resent successfully",
-            detail="A new verification code has been sent to your email/phone.",
-        )
-
-    except ValueError as e:
-        logger.warning(
-            f"Resend verification failed for user {current_user.email}: {str(e)}",
-            extra={"user_uuid": str(current_user.uuid), "error": str(e)},
-        )
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return MessageResponse(
+        message="Verification code resent successfully",
+        detail="A new verification code has been sent to your email/phone.",
+    )

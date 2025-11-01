@@ -11,5 +11,5 @@ echo "📊 Log level: WARNING"
 # Remove old schedule file
 rm -f /app/celerybeat-schedule
 
-exec celery -A app.tasks.celery_app beat \
+exec celery -A src.tasks.celery_app beat \
     --loglevel=warning
