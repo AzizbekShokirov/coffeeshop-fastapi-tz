@@ -27,8 +27,8 @@ async def create_admin_user():
     """Create an initial admin user."""
 
     # Default admin credentials
-    admin_email = settings.FIRST_ADMIN_EMAIL
-    admin_password = settings.FIRST_ADMIN_PASSWORD
+    admin_email = settings.ADMIN_EMAIL
+    admin_password = settings.ADMIN_PASSWORD
 
     print("=" * 60)
     print("Creating Initial Admin User")

@@ -50,11 +50,6 @@ compose/production/nginx/ssl/*.crt
 backup_*.sql
 *.backup
 
-# Legacy Docker files (use compose/ instead)
-docker-compose.prod.yml
-Dockerfile.prod
-nginx.conf
-
 # Database
 *.db
 *.sqlite3
@@ -71,9 +66,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Alembic
-!alembic/versions/.gitkeep
 
 # Celery
 celerybeat-schedule

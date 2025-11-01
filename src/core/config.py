@@ -47,8 +47,8 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
     # Initial Admin User
-    FIRST_ADMIN_EMAIL: str
-    FIRST_ADMIN_PASSWORD: str
+    ADMIN_EMAIL: str
+    ADMIN_PASSWORD: str
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
 
