@@ -32,8 +32,6 @@ async def lifespan(app: FastAPI):
     logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info("📚 Documentation available at http://localhost:8000/docs")
 
-    # Initialize database tables (in production, use Alembic migrations)
-    # await init_db()  # Uncomment if you want auto table creation
     yield
 
     # Shutdown
